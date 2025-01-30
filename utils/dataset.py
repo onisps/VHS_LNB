@@ -1,0 +1,36 @@
+import os
+from typing import Tuple
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+from PIL import Image
+
+class PatchDataset(Dataset):
+    """
+    Загружает патчи для обучения CUT.
+    """
+    def __init__(self, source_dir: str, target_dir: str, image_size: Tuple[int, int] = (256, 256)):
+        self.source_paths = sorted([os.path.join(source_dir, f) for f in os.listdir(source_dir) if f.endswith((".png", ".jpg"))])
+        self.target_paths = sorted([os.path.join(target_dir, f) for f in os.listdir(target_dir) if f.endswith((".png", ".jpg"))])
+
+        self.transform = transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])
+        ])
+
+    def __len__(self):
+        return min(len(self.source_paths), len(self.target_paths))
+
+    def __getitem__(self, idx):
+        source_img = Image.open(self.source_paths[idx]).convert("RGB")
+        target_img = Image.open(self.target_paths[idx]).convert("RGB")
+
+        return self.transform(source_img), self.transform(target_img)
+
+def get_dataloader(source_dir: str, target_dir: str, batch_size: int = 8, image_size: Tuple[int, int] = (256, 256)):
+    """
+    Создаёт DataLoader для обучения.
+    """
+    dataset = PatchDataset(source_dir, target_dir, image_size)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
