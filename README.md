@@ -24,15 +24,15 @@ pip install torch torchvision tensorboard tqdm numpy opencv-python pillow
 
 ### 📌 **1.2. Клонируйте репозиторий**
 ```sh
-git clone https://github.com/your-repo/cut-histology.git
-cd cut-histology
+git clone https://github.com/onisps/VHS_LNB.git
+cd VHS_LNB
 ```
 
 ## 🛠 **2. Подготовка данных**
 ### 🛠 **2.1. Разрезка изображений**
 Перед обучением необходимо разрезать большие изображения на патчи.
 ```sh
-python main.py --image path/to/original_image.png --output_patches patches/ --output_image reconstructed.png
+python make_patches.py --image path/to/original_image.png --output_patches patches/ --output_image reconstructed.png
 ```
 
 Что делает этот шаг?
@@ -53,7 +53,7 @@ python train.py --source path/to/source_patches --target path/to/target_patches
 
 ### 🎓 **3.2. Просмотр логов TensorBoard**
 ```sh
-tensorboard --logdir logs
+tensorboard --logdir=logs
 ```
 Перейдите в браузер: http://localhost:6006/
 
@@ -91,7 +91,14 @@ python apply_model.py --checkpoint checkpoints/cut_model_epoch_50.pth --input pa
 📦
 ├── 📂 checkpoints/         # Чекпоинты обученной модели
 ├── 📂 logs/                # Логи обучения для TensorBoard
-├── 📂 patches/             # Папка для патчей изображений
+├── 📂 data/                # Данные для обучения
+|   ├── 📂 Raw/             # Сырые неразрезанные данные
+|       ├── 📂 GT/
+|       ├── 📂 raw/
+|       ├── 📂 test/
+|   ├── 📂 patches/         # Патчи
+|       ├── 📂 raw/
+|       ├── 📂 GT/
 ├── 📂 utils/               # Вспомогательные модули
 │   ├── 🏗 cut_model.py          # Архитектура модели CUT
 │   ├── 📦 dataset.py            # Датасет для обучения
@@ -99,7 +106,7 @@ python apply_model.py --checkpoint checkpoints/cut_model_epoch_50.pth --input pa
 │   ├── 📝 metadata.py           # Получение информации об изображениях
 │   ├── 💾 model_utils.py        # Функции сохранения/загрузки модели
 ├── 🖼 apply_model.py       # Применение обученной модели
-├── 🖼 main.py              # Разрезка изображений на патчи
+├── 🖼 make_patches.py              # Разрезка изображений на патчи
 ├── 🎓 train.py             # Обучение модели CUT
 ├── 📜 README.md            # Документация проекта
 
