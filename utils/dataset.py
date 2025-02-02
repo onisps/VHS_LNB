@@ -16,11 +16,6 @@ class PatchDataset(Dataset):
         self.source_paths = sorted([os.path.join(source_dir, f) for f in os.listdir(source_dir) if f.endswith((".png", ".jpg"))])
         self.target_paths = sorted([os.path.join(target_dir, f) for f in os.listdir(target_dir) if f.endswith((".png", ".jpg"))])
 
-        #self.transform = transforms.Compose([
-        #    transforms.Resize(image_size),  # Resize to 512x512
-        #    transforms.ToTensor(),
-        #    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # Normalize
-        #])
         self.transform = transforms.Compose([
             transforms.Resize(image_size),  # Resize to 512x512
             transforms.ToTensor(),

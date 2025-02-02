@@ -45,13 +45,13 @@ if __name__ == "__main__":
         image = file                    # "Путь к исходному изображению."
         main(image, output_patches_raw)
     print(f'Done with train raw patches | time > {datetime.now() - now}')
-    # now = datetime.now()
-    # for file in glob('./data/Raw/GT/*'):
-    #     image = file                    # "Путь к исходному изображению."
-    #     main(image, output_patches_gt)
-    # print(f'Done with raw GT patches | time > {datetime.now() - now}')
-    # now = datetime.now()
-    # for file in glob('./data/Raw/test/raw/*'):
-    #     image = file                    # "Путь к исходному изображению."
-    #     main(image, output_patches_test)
-    # print(f'Done with raw test patches | time > {datetime.now() - now}')
+    now = datetime.now()
+    for file in glob('./data/Raw/GT/*'):
+        image = file                    # "Путь к исходному изображению."
+        main(image, output_patches_gt)
+    print(f'Done with raw GT patches | time > {datetime.now() - now}')
+    now = datetime.now()
+    for file in glob('./data/Raw/test/raw/*'):
+        image = file                    # "Путь к исходному изображению."
+        main(image, output_patches_test)
+    print(f'Done with raw test patches | time > {datetime.now() - now}')

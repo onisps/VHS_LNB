@@ -100,7 +100,7 @@ class CUT(nn.Module):
 
     def __init__(self):
         super(CUT, self).__init__()
-        self.encoder = resnet18(pretrained=True)
+        self.encoder = resnet18(weights="pretrained")
         self.encoder.fc = nn.Identity()  # Убираем последний слой
 
         # 2) Decoder
