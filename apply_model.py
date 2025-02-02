@@ -5,6 +5,8 @@ from torchvision import transforms
 from utils.model_utils import load_model
 from utils.image_processing import merge_patches
 import os
+from utils.global_variables import PATCH_SIZE
+
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -15,14 +17,20 @@ def preprocess_image(image_path: str):
     """
     image = cv2.imread(image_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])
-    ])
-
+    try:
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((PATCH_SIZE, PATCH_SIZE)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])
+        ])
+    except:
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])
+        ])
     return transform(image).unsqueeze(0).to(DEVICE)
 
 
@@ -36,12 +44,12 @@ def postprocess_image(tensor):
     return cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
 
-def apply_cut_model(checkpoint_path: str, input_dir: str, output_dir: str):
+def apply_cut_model(model, input_dir: str, output_dir: str):
     """
     Загружает модель, применяет её к изображению и сохраняет результат.
     """
     # 1. Загружаем модель
-    model = load_model(checkpoint_path, DEVICE)
+    # model = load_model(checkpoint_path, DEVICE)
 
     # 2. Обрабатываем все изображения в директории
     os.makedirs(output_dir, exist_ok=True)
@@ -61,7 +69,7 @@ def apply_cut_model(checkpoint_path: str, input_dir: str, output_dir: str):
             output_image = postprocess_image(output_tensor)
             cv2.imwrite(output_image_path, output_image)
 
-            print(f"✅ Обработанное изображение сохранено: {output_image_path}")
+            # print(f"✅ Обработанное изображение сохранено: {output_image_path}")
 
 
 if __name__ == "__main__":
@@ -77,9 +85,12 @@ if __name__ == "__main__":
     os.makedirs('data/test_model', exist_ok=True)
     input = './data/patches/test/'
     output = './data/patches/test_model/'
-    checkpoint = './checkpoints/cut_epoch_5.pth'
-    # apply_cut_model(checkpoint, input, output)
+    epoch = 30
+    checkpoint = f'./checkpoints/cut_epoch_{epoch}.pth'
+    model = load_model(checkpoint, DEVICE)
+    apply_cut_model(checkpoint, input, output)
 
     image = cv2.imread('./data/Raw/raw/003_0009.jpg')
     original_size = image.shape[:2]
-    merge_patches(output, 'data/test_model/reconstructed_pic.jpg', original_size)
+    merge_patches(output, f'data/test_model/reconstructed_epoch_{epoch}.jpg', original_size)
+    # merge_patches('/home/esh/PycharmProjects/VHS_LNB/data/Raw/test/raw/', 'data/test_model/raw_reconstructed_pic.jpg', original_size)

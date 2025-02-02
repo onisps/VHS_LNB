@@ -5,11 +5,14 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 
+from utils.global_variables import PATCH_SIZE
+
+
 class PatchDataset(Dataset):
     """
     Загружает патчи для обучения CUT.
     """
-    def __init__(self, source_dir: str, target_dir: str, image_size: Tuple[int, int] = (512, 512)):  # Updated to 512x512
+    def __init__(self, source_dir: str, target_dir: str, image_size: Tuple[int, int] = (PATCH_SIZE, PATCH_SIZE)):  # Updated to 512x512
         self.source_paths = sorted([os.path.join(source_dir, f) for f in os.listdir(source_dir) if f.endswith((".png", ".jpg"))])
         self.target_paths = sorted([os.path.join(target_dir, f) for f in os.listdir(target_dir) if f.endswith((".png", ".jpg"))])
 
@@ -34,7 +37,7 @@ class PatchDataset(Dataset):
 
         return self.transform(source_img), self.transform(target_img)
 
-def get_dataloader(source_dir: str, target_dir: str, batch_size: int = 8, image_size: Tuple[int, int] = (256, 256)):
+def get_dataloader(source_dir: str, target_dir: str, batch_size: int = 8, image_size: Tuple[int, int] = (PATCH_SIZE, PATCH_SIZE)):
     """
     Создаёт DataLoader для обучения.
     """

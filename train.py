@@ -4,6 +4,9 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from utils.dataset import get_dataloader
 from utils.cut_model import get_cut_model
+from apply_model import apply_cut_model
+from utils.image_processing import merge_patches
+import cv2
 
 # Параметры обучения
 EPOCHS = 50
@@ -57,7 +60,7 @@ def validate_model(model, dataloader, criterion, device):
             val_loss += loss.item()
     return val_loss / len(dataloader)
 
-def train_model(source_dir: str, target_dir: str):
+def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_test_dir: str, output_merged_dir: str):
     """
     Основной цикл обучения CUT.
     """
@@ -79,10 +82,20 @@ def train_model(source_dir: str, target_dir: str):
             best_val_loss = val_loss
             save_checkpoint(model, optimizer, epoch, is_best=True)
 
+        apply_cut_model(model, input_test_dir, output_test_dir)
+        image = cv2.imread('./data/Raw/raw/003_0009.jpg')
+        original_size = image.shape[:2]
+        merge_patches(output_test_dir, f'{output_merged_dir}', epoch+1, original_size)
     writer.close()
     print("🎉 Обучение завершено!")
 
 if __name__ == "__main__":
+
     source = './data/patches/raw/'
     target = './data/patches/GT/'
-    train_model(source, target)
+    input_test_dir = './data/patches/test'
+    output_test_dir = './data/patches/test_model'
+    output_merged_dir = './data/test_model'
+    os.makedirs(output_test_dir, exist_ok=True)
+    os.makedirs(output_merged_dir, exist_ok=True)
+    train_model(source, target, input_test_dir, output_test_dir, output_merged_dir)
