@@ -74,6 +74,7 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
 
     best_val_loss = float("inf")
     train_loss = 1
+    epoch = 0
     #for epoch in range(EPOCHS):
     while train_loss > 0.2:
         train_loss = train_epoch(model, train_dataloader, optimizer, criterion, DEVICE)
