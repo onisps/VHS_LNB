@@ -73,11 +73,13 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
     model.to(DEVICE)
 
     best_val_loss = float("inf")
-    for epoch in range(EPOCHS):
+    train_loss = 1
+    #for epoch in range(EPOCHS):
+    while train_loss > 0.2:
         train_loss = train_epoch(model, train_dataloader, optimizer, criterion, DEVICE)
         val_loss = validate_model(model, val_dataloader, criterion, DEVICE)
 
-        print(f"📉 Epoch {epoch}/{EPOCHS}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        print(f"📉 Epoch {epoch}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
         writer.add_scalar("Loss/train", train_loss, epoch)
         writer.add_scalar("Loss/val", val_loss, epoch)
 
@@ -89,6 +91,7 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
         image = cv2.imread('./data/Raw/raw/003_0009.jpg')
         original_size = image.shape[:2]
         merge_patches(output_test_dir, f'{output_merged_dir}', epoch, original_size)
+        epoch += 1
     writer.close()
     print("🎉 Обучение завершено!")
 
