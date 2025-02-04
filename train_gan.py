@@ -4,9 +4,12 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from utils.dataset import get_dataloader
 from utils.cycle_gan_model import get_cycle_gan_model
-from utils.image_processing import merge_patches
+from utils.image_processing import merge_patches, process_images_parallel
 from utils.global_variables import PATCH_SIZE
+from apply_model import apply_gan_model
 import cv2
+from datetime import datetime
+from glob2 import glob
 
 # Параметры обучения
 EPOCHS = 50
@@ -118,8 +121,8 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
 
     best_G_loss = float("inf")
     epoch = 0
-    train
-    while train_G_loss < 0.2:
+    train_G_loss = 1
+    while train_G_loss > 0.2:
         train_G_loss, train_D_loss = train_epoch(
             G_AB, G_BA, D_A, D_B, optimizer_G, optimizer_D_A, optimizer_D_B, train_dataloader, adversarial_loss, cycle_loss, identity_loss
         )
@@ -132,11 +135,11 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
             best_G_loss = train_G_loss
             save_checkpoint(G_AB, G_BA, D_A, D_B, optimizer_G, optimizer_D_A, optimizer_D_B, epoch)
         apply_gan_model(
-                        checkpoint_path = os.path.join(CHECKPOINT_DIR, f"cycle_gan_epoch_{epoch}.pth"),
-                        input_test_dir,
-                        output_test_dir,
-                        generator_type="G_AB"
-                      )
+            os.path.join(CHECKPOINT_DIR, f"cycle_gan_epoch_{epoch}.pth"),
+            input_test_dir,
+            output_test_dir,
+            generator_type="G_AB"
+        )
         image = cv2.imread('./data/Raw/raw/003_0009.jpg')
         original_size = image.shape[:2]
         merge_patches(output_test_dir, f'{output_merged_dir}', epoch, original_size)
@@ -145,6 +148,26 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
     print("🎉 Обучение завершено!")
 
 if __name__ == "__main__":
+
+    os.makedirs('data/patches', exist_ok=True)
+    os.makedirs('data/patches/raw', exist_ok=True)
+    os.makedirs('data/patches/GT', exist_ok=True)
+    os.makedirs('data/patches/test', exist_ok=True)
+    now = datetime.now()
+    output_patches_raw =  './data/patches/raw'       # "Папка для сохранения патчей."
+    output_patches_gt =  './data/patches/GT'       # "Папка для сохранения патчей."
+    output_patches_test =  './data/patches/test'       # "Папка для сохранения патчей."
+    process_images_parallel('./data/Raw/raw/*', output_patches_raw)
+    print(f'Done with train raw patches | time > {datetime.now() - now}')
+    now = datetime.now()
+    process_images_parallel('./data/Raw/GT/*', output_patches_gt)
+    print(f'Done with raw GT patches | time > {datetime.now() - now}')
+    now = datetime.now()
+    process_images_parallel('./data/Raw/test/raw/*', output_patches_test)
+    print(f'Done with raw test patches | time > {datetime.now() - now}')
+
+
+
     source = './data/patches/raw/'
     target = './data/patches/GT/'
     input_test_dir = './data/patches/test'

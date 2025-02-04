@@ -3,6 +3,15 @@ import cv2
 import numpy as np
 from typing import List, Tuple
 from utils.global_variables import PATCH_SIZE, OVERLAP
+from glob2 import glob
+import multiprocessing
+from functools import partial
+
+def process_images_parallel(input_glob: str, output_dir: str):
+    files = glob(input_glob)
+    with multiprocessing.Pool(processes=os.cpu_count()) as pool:
+        worker = partial(create_patches, output_dir=output_dir)
+        pool.map(worker, files)
 
 def create_patches(image_path: str, output_dir: str) -> List[str]:
     """
