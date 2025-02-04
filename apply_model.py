@@ -71,7 +71,48 @@ def apply_cut_model(model, input_dir: str, output_dir: str):
 
             # print(f"✅ Обработанное изображение сохранено: {output_image_path}")
 
+def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, generator_type="G_AB"):
+    """
+    Применяет обученную модель Cycle-GAN к тестовым патчам и сохраняет результаты.
 
+    :param checkpoint_path: Путь к чекпоинту модели
+    :param input_dir: Папка с тестовыми патчами
+    :param output_dir: Папка для сохранённых результатов
+    :param generator_type: Выбирает генератор (G_AB - преобразование A->B, G_BA - B->A)
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Загружаем модель
+    checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+    model = load_model(checkpoint_path, DEVICE)
+
+    if generator_type == "G_AB":
+        model.load_state_dict(checkpoint["G_AB"])
+    elif generator_type == "G_BA":
+        model.load_state_dict(checkpoint["G_BA"])
+    else:
+        raise ValueError("generator_type должен быть 'G_AB' или 'G_BA'.")
+
+    model.eval()
+
+    for filename in os.listdir(input_dir):
+        if filename.endswith((".png", ".jpg", ".jpeg")):
+            input_image_path = os.path.join(input_dir, filename)
+            output_image_path = os.path.join(output_dir, filename)
+
+            # Предобработка изображения
+            input_tensor = preprocess_image(input_image_path)
+
+            # Применение модели
+            with torch.no_grad():
+                output_tensor = model(input_tensor)
+
+            # Преобразование в изображение и сохранение
+            output_image = postprocess_image(output_tensor)
+            cv2.imwrite(output_image_path, output_image)
+
+    # print(f"✅ GAN обработал тестовые патчи. Результаты сохранены в {output_dir}")
+    
 if __name__ == "__main__":
     # import argparse
     #
