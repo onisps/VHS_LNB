@@ -84,7 +84,7 @@ def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, gener
 
     # Загружаем модель
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
-    model = load_model(checkpoint_path, DEVICE)
+    model = load_model(checkpoint_path, DEVICE, 'GAN')
 
     if generator_type == "G_AB":
         model.load_state_dict(checkpoint["G_AB"])
