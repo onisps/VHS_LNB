@@ -72,13 +72,13 @@ def apply_cut_model(model, input_dir: str, output_dir: str):
             # print(f"✅ Обработанное изображение сохранено: {output_image_path}")
 
 def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, generator_type="G_AB"):
- """
-    Применяет обученную модель Cycle-GAN к тестовым патчам и сохраняет результаты.
-    """
     os.makedirs(output_dir, exist_ok=True)
     
-    # Загружаем модель используя обновлённую функцию load_model
+    # Загружаем модель
+    print(f"Загрузка модели из чекпоинта: {checkpoint_path}")
     model = load_model(checkpoint_path, device=DEVICE, generator_type=generator_type)
+    if model is None:
+        raise ValueError("Модель не была загружена.")
     
     for filename in os.listdir(input_dir):
         if filename.lower().endswith((".png", ".jpg", ".jpeg")):
@@ -86,15 +86,17 @@ def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, gener
             output_image_path = os.path.join(output_dir, filename)
     
             # Предобработка изображения
-            input_tensor = preprocess_image(input_image_path)  # Предполагается, что эта функция определена
+            print(f"Обработка изображения: {input_image_path}")
+            input_tensor = preprocess_image(input_image_path)
     
             # Применение модели
             with torch.no_grad():
                 output_tensor = model(input_tensor)
     
             # Преобразование в изображение и сохранение
-            output_image = postprocess_image(output_tensor)  # Предполагается, что эта функция определена
+            output_image = postprocess_image(output_tensor)
             cv2.imwrite(output_image_path, output_image)
+            print(f"Изображение сохранено: {output_image_path}")
     
 if __name__ == "__main__":
     # import argparse
