@@ -1,7 +1,6 @@
 import os
 import torch
 from utils.cut_model import CUT
-from utils.circle_gan_model import GAN
 
 CHECKPOINT_DIR = "../checkpoints"
 
