@@ -135,7 +135,7 @@ def train_model(source_dir: str, target_dir: str, input_test_dir: str, output_te
             best_G_loss = train_G_loss
             save_checkpoint(G_AB, G_BA, D_A, D_B, optimizer_G, optimizer_D_A, optimizer_D_B, epoch)
         apply_gan_model(
-            os.path.join(CHECKPOINT_DIR, f"cycle_gan_epoch_{epoch}.pth"),
+            f"./checkpoints/cycle_gan_epoch_{epoch}.pth",
             input_test_dir,
             output_test_dir,
             generator_type="G_AB"
