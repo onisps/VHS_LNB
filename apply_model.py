@@ -76,7 +76,7 @@ def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, gener
     
     # Загружаем модель
     print(f"Загрузка модели из чекпоинта: {checkpoint_path}")
-    model = load_model(checkpoint_path, device=DEVICE, generator_type=generator_type)
+    model = load_model(checkpoint_path, device=DEVICE, model_type='GAN', generator_type=generator_type)
     if model is None:
         raise ValueError("Модель не была загружена.")
     
