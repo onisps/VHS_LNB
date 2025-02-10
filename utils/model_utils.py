@@ -70,7 +70,9 @@ def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: s
     return model
 
 def load_model(checkpoint_path: str, device: str = "cuda", model_type: str = 'GAN', generator_type: str = 'G_AB'):
-     if generator_type.upper() == 'CUT':
+    if model_type.upper() == 'CUT':
         return load_model_cut(checkpoint_path, device)
-     elif generator_type.upper() == 'GAN':
+    elif model_type.upper() == 'GAN':
         return load_model_gan(checkpoint_path, device, generator_type)
+    else:
+        raise ValueError("model_type должен быть 'CUT' или 'GAN'.")
