@@ -48,7 +48,7 @@ def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: s
     """
     checkpoint = torch.load(checkpoint_path, map_location=device)
     # Instantiate the Generator (as defined in your cycle_gan_model.py)
-    from circle_gan_model import Generator  # Импорт класса генератора
+    from utils.cycle_gan_model import Generator  # Импорт класса генератора
     model = Generator().to(device)
     
     # Load the corresponding generator state_dict from the checkpoint
