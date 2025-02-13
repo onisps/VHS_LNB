@@ -1,4 +1,7 @@
 import os
+import sys
+import time
+
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -138,7 +141,7 @@ def train_model(source_dir: str, target_dir: str,
     """
     Main training loop for CycleGAN.
     """
-    train_dataloader = get_dataloader(source_dir, target_dir, BATCH_SIZE, PATCH_SIZE)
+    train_dataloader = get_dataloader(source_dir, target_dir, BATCH_SIZE, (PATCH_SIZE, PATCH_SIZE))
 
     # Load CycleGAN components
     G_AB, G_BA, D_A, D_B, \
@@ -212,8 +215,11 @@ if __name__ == "__main__":
 
     process_images_parallel('./data/Raw/raw/*', output_patches_raw)
     print(f'Done with train raw patches | time > {datetime.now() - now}')
-    now = datetime.now()
 
+    import time
+    time.sleep(10)
+
+    now = datetime.now()
     process_images_parallel('./data/Raw/GT/*', output_patches_gt)
     print(f'Done with raw GT patches | time > {datetime.now() - now}')
     now = datetime.now()

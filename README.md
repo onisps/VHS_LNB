@@ -53,7 +53,7 @@ python train.py --source path/to/source_patches --target path/to/target_patches
 
 ### 🎓 **3.2. Просмотр логов TensorBoard**
 ```sh
-tensorboard --logdir=logs
+tensorboard --logdir=logs --host 0.0.0.0
 ```
 Перейдите в браузер: http://localhost:6006/
 
