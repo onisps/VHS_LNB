@@ -86,7 +86,7 @@ def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, gener
             output_image_path = os.path.join(output_dir, filename)
     
             # Предобработка изображения
-            print(f"Обработка изображения: {input_image_path}")
+            # print(f"Обработка изображения: {input_image_path}")
             input_tensor = preprocess_image(input_image_path)
     
             # Применение модели
@@ -96,7 +96,7 @@ def apply_gan_model(checkpoint_path: str, input_dir: str, output_dir: str, gener
             # Преобразование в изображение и сохранение
             output_image = postprocess_image(output_tensor)
             cv2.imwrite(output_image_path, output_image)
-            print(f"Изображение сохранено: {output_image_path}")
+            # print(f"Изображение сохранено: {output_image_path}")
     
 if __name__ == "__main__":
     # import argparse
