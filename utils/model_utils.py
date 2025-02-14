@@ -39,35 +39,49 @@ def load_model_cut(checkpoint_path: str, device: str = "cuda"):
     
 def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: str = 'G_AB'):
     """
-    Загружает генератор Cycle-GAN из файла чекпоинта.
-    
-    :param checkpoint_path: Путь к чекпоинту модели.
-    :param device: Устройство для загрузки модели (например, 'cuda' или 'cpu').
-    :param generator_type: Выбор генератора ('G_AB' для преобразования A → B или 'G_BA' для B → A).
-    :return: Загруженная модель генератора.
+    Loads a CycleGAN generator from a checkpoint, wrapping it in DataParallel
+    if multiple GPUs are available. This allows you to load state_dict keys
+    that contain the 'module.' prefix.
+
+    :param checkpoint_path: Path to the checkpoint file.
+    :param device: Device to load the model onto ('cuda' or 'cpu').
+    :param generator_type: Which generator to load ('G_AB' or 'G_BA').
+    :return: A loaded generator model, potentially wrapped in DataParallel.
     """
+    # Load the checkpoint from disk
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    # Instantiate the Generator (as defined in your cycle_gan_model.py)
-    from utils.cycle_gan_model import Generator  # Импорт класса генератора
-    model = Generator().to(device)
-    
-    # Load the corresponding generator state_dict from the checkpoint
+
+    # Instantiate the Generator as defined in your cycle_gan_model.py
+    model = Generator()  # do NOT move to device yet, we will wrap first
+
+    # Wrap the model in DataParallel if multiple GPUs are available
+    num_gpus = torch.cuda.device_count()
+    if num_gpus > 1:
+        print(f"Using {num_gpus} GPUs for loading!")
+        model = nn.DataParallel(model)
+
+    # Now move to the specified device (e.g., 'cuda:0')
+    model.to(device)
+
+    # Select which generator weights to load from the checkpoint
     if generator_type.upper() == 'G_AB':
         if "G_AB" in checkpoint:
             model.load_state_dict(checkpoint["G_AB"])
         else:
-            raise KeyError("Ключ 'G_AB' не найден в чекпоинте.")
+            raise KeyError("Key 'G_AB' not found in checkpoint.")
     elif generator_type.upper() == 'G_BA':
         if "G_BA" in checkpoint:
             model.load_state_dict(checkpoint["G_BA"])
         else:
-            raise KeyError("Ключ 'G_BA' не найден в чекпоинте.")
+            raise KeyError("Key 'G_BA' not found in checkpoint.")
     else:
-        raise ValueError("generator_type должен быть 'G_AB' или 'G_BA'.")
-    
-    model.eval()  # Переключаем модель в режим инференса
-    print(f"✅ Генератор {generator_type} загружен из {checkpoint_path} (эпоха {checkpoint.get('epoch', 'неизвестна')})")
+        raise ValueError("generator_type must be 'G_AB' or 'G_BA'.")
+
+    model.eval()
+    print(f"✅ Generator {generator_type} loaded from {checkpoint_path} "
+          f"(epoch {checkpoint.get('epoch', 'unknown')}) with DataParallel={num_gpus>1}")
     return model
+
 
 def load_model(checkpoint_path: str, device: str = "cuda", model_type: str = 'GAN', generator_type: str = 'G_AB'):
     if model_type.upper() == 'CUT':
