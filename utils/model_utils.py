@@ -2,6 +2,7 @@ import os
 import torch
 from utils.cut_model import CUT
 from utils.cycle_gan_model import Generator
+import torch.nn as nn
 CHECKPOINT_DIR = "../checkpoints"
 
 
