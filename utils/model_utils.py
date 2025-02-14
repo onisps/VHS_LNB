@@ -1,7 +1,7 @@
 import os
 import torch
 from utils.cut_model import CUT
-
+from utils.cycle_gan_model import Generator
 CHECKPOINT_DIR = "../checkpoints"
 
 
@@ -50,7 +50,7 @@ def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: s
     """
     # Load the checkpoint from disk
     checkpoint = torch.load(checkpoint_path, map_location=device)
-
+    
     # Instantiate the Generator as defined in your cycle_gan_model.py
     model = Generator()  # do NOT move to device yet, we will wrap first
 
