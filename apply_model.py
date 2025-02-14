@@ -112,9 +112,9 @@ if __name__ == "__main__":
     input = './data/patches/test/'
     output = './data/patches/test_model/'
     epoch = 30
-    checkpoint = f'./checkpoints/cut_epoch_{epoch}.pth'
+    checkpoint = f'./checkpoints/cycle_gan_epoch_{epoch}.pth'
     model = load_model(checkpoint, DEVICE)
-    apply_cut_model(checkpoint, input, output)
+    apply_gan_model(checkpoint, input, output)
 
     image = cv2.imread('./data/Raw/raw/003_0009.jpg')
     original_size = image.shape[:2]
