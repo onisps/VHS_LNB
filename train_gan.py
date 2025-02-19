@@ -104,9 +104,11 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         loss_identity_B = identity_loss(G_AB(real_B), real_B)
 
         # Combined generator loss
+        # Decrease cycle from 10 to 5
+        # Decrease identity from 5 to 1 (or 0 to disable entirely)
         loss_G = (loss_G_AB + loss_G_BA
-                  + 10 * (loss_cycle_A + loss_cycle_B)
-                  + 5 * (loss_identity_A + loss_identity_B))
+                  + 5 * (loss_cycle_A + loss_cycle_B)
+                  + 1 * (loss_identity_A + loss_identity_B))
         loss_G.backward()
         optimizer_G.step()
 
