@@ -111,12 +111,12 @@ if __name__ == "__main__":
     os.makedirs('data/test_model', exist_ok=True)
     input = './data/patches/test/'
     output = './data/patches/test_model/'
-    epoch = 30
+    epoch = 0 
     checkpoint = f'./checkpoints/cycle_gan_epoch_{epoch}.pth'
     model = load_model(checkpoint, DEVICE)
     apply_gan_model(checkpoint, input, output)
 
     image = cv2.imread('./data/Raw/raw/003_0009.jpg')
     original_size = image.shape[:2]
-    merge_patches(output, f'data/test_model/reconstructed_epoch_{epoch}.jpg', original_size)
+    merge_patches(output, f'data/test_model/reconstructed_epoch_{epoch}.jpg', epoch, original_size)
     # merge_patches('/home/esh/PycharmProjects/VHS_LNB/data/Raw/test/raw/', 'data/test_model/raw_reconstructed_pic.jpg', original_size)
