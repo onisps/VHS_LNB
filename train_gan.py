@@ -104,9 +104,6 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     num_batches = len(dataloader)
     
     for batch_idx, (real_A, real_B) in enumerate(tqdm(dataloader)):
-        print(real_A.min(), real_A.max())
-        print(real_B.min(), real_B.max())
-        break
         real_A = real_A.to(device)
         real_B = real_B.to(device)
 
