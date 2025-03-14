@@ -32,7 +32,7 @@ class PatchDataset(Dataset):
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             transforms.ColorJitter(
-                brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1
+                brightness=0.1, contrast=0.1, saturation=0.1, hue=0.05
             ),
             transforms.ToTensor(),
             # Normalizing to [-1, 1] for compatibility with Tanh in the generator
