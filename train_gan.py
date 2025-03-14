@@ -7,6 +7,12 @@ from torch.utils.tensorboard import SummaryWriter
 import torchmetrics
 from torchvision.utils import make_grid
 from tqdm import tqdm
+from torchmetrics.functional import (
+    structural_similarity_index_measure as ssim,
+    peak_signal_noise_ratio as psnr
+)
+from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+from torchmetrics.image.fid import FrechetInceptionDistance
 
 # Import DataParallel if you wish to wrap your models
 import torch.nn as nn
@@ -35,6 +41,8 @@ if torch.cuda.is_available():
     
 # Now you continue as usual:
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+lpips_metric = LearnedPerceptualImagePatchSimilarity(net_type='vgg').to(device)
+fid_metric = FrechetInceptionDistance(feature=2048).to(device)
 
 LOG_DIR = "logs"
 CHECKPOINT_DIR = "checkpoints"
@@ -84,11 +92,15 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     epoch_D_loss = 0.0
     epoch_mae = 0.0
     epoch_mse = 0.0
+    epoch_ssim, epoch_psnr, epoch_lpips = 0.0, 0.0, 0.0
                     
     # Initialize metrics
     mse_metric = torchmetrics.MeanSquaredError().to(device)
     mae_metric = torch.nn.L1Loss()
-
+    
+    # Reset FID stats at the start of an epoch
+    fid_metric.reset()
+    
     num_batches = len(dataloader)
     
     for batch_idx, (real_A, real_B) in enumerate(tqdm(dataloader)):
@@ -162,12 +174,41 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         mse_fakeB_realB = mean_squared_error(fake_B, real_B)
         epoch_mae += mae_fakeB_realB.item()
         epoch_mse += mse_fakeB_realB.item()
+
+        # ------------------
+        # Reference-based metrics
+        # ------------------
+        # If your images are in [-1, 1], shift them to [0, 1] for metrics:
+        fake_B_01 = 0.5 * (fake_B + 1.0)
+        real_B_01 = 0.5 * (real_B + 1.0)
+
+        # 1) SSIM
+        ssim_val = ssim(fake_B_01, real_B_01)
+        epoch_ssim += ssim_val.item()
+
+        # 2) PSNR
+        psnr_val = psnr(fake_B_01, real_B_01)
+        epoch_psnr += psnr_val.item()
+
+        # 3) LPIPS
+        lpips_val = lpips_metric(fake_B_01, real_B_01)
+        epoch_lpips += lpips_val.item()
+
+        # 4) FID (distribution-based)
+        # Accumulate features for real_B and fake_B
+        fid_metric.update(real_B_01, real=True)
+        fid_metric.update(fake_B_01, real=False)
+       
+
         
         # Log metrics to TensorBoard per batch
         global_step = epoch * len(dataloader) + batch_idx
         
         writer.add_scalar("Metrics_Iter/MAE_FakeB_RealB", mae_fakeB_realB, global_step)
         writer.add_scalar("Metrics_Iter/MSE_FakeB_RealB", mse_fakeB_realB, global_step)
+        writer.add_scalar("Metrics_Iter/SSIM", ssim_val, global_step)
+        writer.add_scalar("Metrics_Iter/PSNR", psnr_val, global_step)
+        writer.add_scalar("Metrics_Iter/PSNR", lpips_val, global_step)
         writer.add_scalar("Loss_Iter/G_iter", loss_G.item(), global_step)
         writer.add_scalar("Loss_Iter/D_iter", loss_D_A_total.item(), global_step)
         
@@ -177,7 +218,18 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     
     epoch_mae /= num_batches
     epoch_mse /= num_batches
-    
+    # End of epoch: compute average SSIM, PSNR, LPIPS
+    epoch_ssim /= num_batches
+    epoch_psnr /= num_batches
+    epoch_lpips /= num_batches
+
+    # Compute FID for the entire epoch
+    epoch_fid = fid_metric.compute().item()
+                    
+    writer.add_scalar("Metrics_Epoch/SSIM", epoch_ssim, global_step)
+    writer.add_scalar("Metrics_Epoch/PSNR", epoch_psnr, global_step)
+    writer.add_scalar("Metrics_Epoch/LPIP", epoch_lpips, global_step)
+    writer.add_scalar("Metrics_Epoch/FID", epoch_fid, global_step)
     writer.add_scalar("Metrics_Epoch/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
     writer.add_scalar("Metrics_Epoch/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
                     
@@ -224,9 +276,11 @@ def train_model(source_dir: str, target_dir: str,
             train_dataloader, epoch,
             adversarial_loss, cycle_loss, identity_loss
         )
+        
         print(f"📉 Epoch {epoch}, G Loss: {train_G_loss:.4f}, D Loss: {train_D_loss:.4f}")
-        writer.add_scalar("Loss_Epoch/G_train", train_G_loss / len(dataloader), epoch)
-        writer.add_scalar("Loss_Epoch/D_train", train_D_loss / len(dataloader), epoch)
+        writer.add_scalar("Loss_Epoch/G_train", train_G_loss, epoch)
+        writer.add_scalar("Loss_Epoch/D_train", train_D_loss, epoch)
+        
         if train_G_loss < best_G_loss or SAVE_EVERY_EPOCH:
             best_G_loss = train_G_loss
             save_checkpoint(G_AB, G_BA, D_A, D_B,
