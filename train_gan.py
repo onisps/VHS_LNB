@@ -218,7 +218,7 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         writer.add_scalar("Metrics_Iter/MSE_FakeB_RealB", mse_fakeB_realB, global_step)
         writer.add_scalar("Metrics_Iter/SSIM", ssim_val, global_step)
         writer.add_scalar("Metrics_Iter/PSNR", psnr_val, global_step)
-        writer.add_scalar("Metrics_Iter/PSNR", lpips_val, global_step)
+        writer.add_scalar("Metrics_Iter/LPIP", lpips_val, global_step)
         writer.add_scalar("Loss_Iter/G_iter", loss_G.item(), global_step)
         writer.add_scalar("Loss_Iter/D_iter", loss_D_A_total.item(), global_step)
         
