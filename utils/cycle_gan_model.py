@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils.global_variable import LR
+from utils.global_variables import LR
 from torch.nn.utils import spectral_norm
 
 class ResidualBlock(nn.Module):
