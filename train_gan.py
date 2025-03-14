@@ -73,6 +73,8 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
 
     epoch_G_loss = 0.0
     epoch_D_loss = 0.0
+    epoch_mae = 0.0
+    epoch_mse = 0.0
                     
     # Initialize metrics
     mse_metric = torchmetrics.MeanSquaredError().to(device)
