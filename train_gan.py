@@ -166,10 +166,10 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # Log metrics to TensorBoard per batch
         global_step = epoch * len(dataloader) + batch_idx
         
-        writer.add_scalar("Metrics/MAE_FakeB_RealB", mae_fakeB_realB, global_step)
-        writer.add_scalar("Metrics/MSE_FakeB_RealB", mse_fakeB_realB, global_step)
-        writer.add_scalar("Loss/G_iter", loss_G.item(), global_step)
-        writer.add_scalar("Loss/D_iter", loss_D_A_total.item(), global_step)
+        writer.add_scalar("Metrics_Iter/MAE_FakeB_RealB", mae_fakeB_realB, global_step)
+        writer.add_scalar("Metrics_Iter/MSE_FakeB_RealB", mse_fakeB_realB, global_step)
+        writer.add_scalar("Loss_Iter/G_iter", loss_G.item(), global_step)
+        writer.add_scalar("Loss_Iter/D_iter", loss_D_A_total.item(), global_step)
         
     # ---------------------------------
     # Log epoch-level summaries
@@ -178,8 +178,8 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     epoch_mae /= num_batches
     epoch_mse /= num_batches
     
-    writer.add_scalar("Metrics/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
-    writer.add_scalar("Metrics/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
+    writer.add_scalar("Metrics_Epoch/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
+    writer.add_scalar("Metrics_Epoch/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
                     
     return epoch_G_loss / len(dataloader), epoch_D_loss / len(dataloader)
 
@@ -225,8 +225,8 @@ def train_model(source_dir: str, target_dir: str,
             adversarial_loss, cycle_loss, identity_loss
         )
         print(f"📉 Epoch {epoch}, G Loss: {train_G_loss:.4f}, D Loss: {train_D_loss:.4f}")
-        writer.add_scalar("Loss/G_train", epoch_G_loss / len(dataloader), epoch)
-        writer.add_scalar("Loss/D_train", train_D_loss / len(dataloader), epoch)
+        writer.add_scalar("Loss_Epoch/G_train", train_G_loss / len(dataloader), epoch)
+        writer.add_scalar("Loss_Epoch/D_train", train_D_loss / len(dataloader), epoch)
         if train_G_loss < best_G_loss or SAVE_EVERY_EPOCH:
             best_G_loss = train_G_loss
             save_checkpoint(G_AB, G_BA, D_A, D_B,
