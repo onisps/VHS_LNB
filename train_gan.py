@@ -77,7 +77,9 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     # Initialize metrics
     mse_metric = torchmetrics.MeanSquaredError().to(device)
     mae_metric = torch.nn.L1Loss()
-                    
+
+    num_batches = len(dataloader)
+    
     for batch_idx, (real_A, real_B) in enumerate(tqdm(dataloader)):
         real_A = real_A.to(device)
         real_B = real_B.to(device)
@@ -147,19 +149,26 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # Compute pixel-level MAE between fake_B and real_B
         mae_fakeB_realB = mean_absolute_error(fake_B, real_B)
         mse_fakeB_realB = mean_squared_error(fake_B, real_B)
-
+        epoch_mae += mae_fakeB_realB.item()
+        epoch_mse += mse_fakeB_realB.item()
+        
         # Log metrics to TensorBoard per batch
         global_step = epoch * len(dataloader) + batch_idx
-        writer.add_scalar("Metrics/MAE_FakeB_RealB", mae_fakeB, epoch * len(dataloader) + batch_idx)
-        writer.add_scalar("Loss/G_iter", loss_G.item(), epoch * len(dataloader) + batch_idx)
-        writer.add_scalar("Loss/D_iter", loss_D_A.item(), epoch * len(dataloader) + batch_idx)
+        
+        writer.add_scalar("Metrics/MAE_FakeB_RealB", mae_fakeB_realB, global_step)
+        writer.add_scalar("Metrics/MSE_FakeB_RealB", mse_fakeB_realB, global_step)
+        writer.add_scalar("Loss/G_iter", loss_G.item(), global_step)
+        writer.add_scalar("Loss/D_iter", loss_D_A.item(), global_step)
         
     # ---------------------------------
     # Log epoch-level summaries
     # ---------------------------------
     print(f"📉 Epoch {epoch}, G Loss: {train_G_loss:.4f}, D Loss: {train_D_loss:.4f}")
-    avg_mae_fakeB = mae_fakeB  # last batch representative value for simplicity
-    writer.add_scalar("Metrics/MAE_fakeB_RealB_epoch", mae_fakeB, epoch)
+    epoch_mae /= num_batches
+    epoch_mse /= num_batches
+    
+    writer.add_scalar("Metrics/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
+    writer.add_scalar("Metrics/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
     writer.add_scalar("Loss/G_train", train_G_loss / len(dataloader), epoch)
     writer.add_scalar("Loss/D_train", train_D_loss / len(dataloader), epoch)
                     
