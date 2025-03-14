@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from utils.global_variable import LR
+from torch.nn.utils import spectral_norm
 
 class ResidualBlock(nn.Module):
     """
@@ -89,8 +90,8 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         def discriminator_block(in_filters, out_filters, stride=2, normalize=True):
-            layers = [nn.Conv2d(in_filters, out_filters, kernel_size=4,
-                                 stride=stride, padding=1, bias=False)]
+            layers = [nn.utils.spectral_norm(nn.Conv2d(in_filters, out_filters, kernel_size=4,
+                                 stride=stride, padding=1, bias=False))]
             if normalize:
                 layers.append(nn.InstanceNorm2d(out_filters))
             layers.append(nn.LeakyReLU(0.2, inplace=True))
