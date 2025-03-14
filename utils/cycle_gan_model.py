@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from utils.global_variable import LR
 
 class ResidualBlock(nn.Module):
     """
@@ -126,10 +127,10 @@ def get_cycle_gan_model():
 
     # Optimizers
     optimizer_G = optim.Adam(
-        list(G_AB.parameters()) + list(G_BA.parameters()), lr=0.0002, betas=(0.5, 0.999)
+        list(G_AB.parameters()) + list(G_BA.parameters()), lr=LR, betas=(0.5, 0.999)
     )
-    optimizer_D_A = optim.Adam(D_A.parameters(), lr=0.0002, betas=(0.5, 0.999))
-    optimizer_D_B = optim.Adam(D_B.parameters(), lr=0.0002, betas=(0.5, 0.999))
+    optimizer_D_A = optim.Adam(D_A.parameters(), lr=LR, betas=(0.5, 0.999))
+    optimizer_D_B = optim.Adam(D_B.parameters(), lr=LR, betas=(0.5, 0.999))
 
     # Loss functions
     adversarial_loss = nn.MSELoss()  # or nn.BCEWithLogitsLoss() in some variations
