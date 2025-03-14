@@ -24,7 +24,16 @@ from glob2 import glob
 EPOCHS = 50
 BATCH_SIZE = 8
 SAVE_EVERY_EPOCH = True
-# Instead of "cuda" or "cpu" as a string, use a torch.device object:
+
+# Explicit CUDA initialization
+if torch.cuda.is_available():
+    torch.cuda.init()
+    torch.cuda.empty_cache()
+    device = torch.device("cuda:0")
+    torch.cuda.set_device(device)
+    print(f"✅ Initialized CUDA on device: {device}")
+    
+# Now you continue as usual:
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 LOG_DIR = "logs"
