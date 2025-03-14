@@ -19,7 +19,7 @@
 ## 🚀 **1. Установка**
 ### 📌 **1.1. Установите зависимости**
 ```sh
-pip install torch torchvision tensorboard tqdm numpy opencv-python pillow
+pip install torch torchvision torchmetrics tensorboard tqdm numpy opencv-python pillow
 ```
 
 ### 📌 **1.2. Клонируйте репозиторий**
