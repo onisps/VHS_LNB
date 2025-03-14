@@ -197,19 +197,12 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # 4) FID (distribution-based)
         # Accumulate features for real_B and fake_B
 
-        # Suppose fake_B is in [-1,1]. Convert to [0,1].
-        fake_B_01 = 0.5 * (fake_B + 1.0)
         # Convert [0,1] to [0,255] and cast to uint8
         fake_B_uint8 = (fake_B_01 * 255).clamp(0, 255).to(torch.uint8)
-        
-        # Do the same for real_B
-        real_B_01 = 0.5 * (real_B + 1.0)
         real_B_uint8 = (real_B_01 * 255).clamp(0, 255).to(torch.uint8)
         
-        fid_metric.update(real_B_01, real=True)
-        fid_metric.update(fake_B_01, real=False)
-       
-
+        fid_metric.update(fake_B_uint8, real=True)
+        fid_metric.update(real_B_uint8, real=False)
         
         # Log metrics to TensorBoard per batch
         global_step = epoch * len(dataloader) + batch_idx
