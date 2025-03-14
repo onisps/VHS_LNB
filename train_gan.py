@@ -4,6 +4,8 @@ import time
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import torchmetrics
+from torchvision.utils import make_grid
 from tqdm import tqdm
 
 # Import DataParallel if you wish to wrap your models
@@ -71,8 +73,12 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
 
     epoch_G_loss = 0.0
     epoch_D_loss = 0.0
-
-    for batch_idx, (real_A, real_B) in enumerate(dataloader):
+                    
+    # Initialize metrics
+    mse_metric = torchmetrics.MeanSquaredError().to(device)
+    mae_metric = torch.nn.L1Loss()
+                    
+    for batch_idx, (real_A, real_B) in enumerate(tqdm(dataloader)):
         real_A = real_A.to(device)
         real_B = real_B.to(device)
 
@@ -104,8 +110,6 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         loss_identity_B = identity_loss(G_AB(real_B), real_B)
 
         # Combined generator loss
-        # Decrease cycle from 10 to 5
-        # Decrease identity from 5 to 1 (or 0 to disable entirely)
         loss_G = (loss_G_AB + loss_G_BA
                   + 8 * (loss_cycle_A + loss_cycle_B)
                   + 0.5 * (loss_identity_A + loss_identity_B))
@@ -134,7 +138,31 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
 
         epoch_G_loss += loss_G.item()
         epoch_D_loss += (loss_D_A_total.item() + loss_D_B_total.item())
+        
+        # ---------------------------------
+        # Compute Additional Metrics
+        # ---------------------------------
+        from torchmetrics.functional import mean_absolute_error, mean_squared_error
 
+        # Compute pixel-level MAE between fake_B and real_B
+        mae_fakeB_realB = mean_absolute_error(fake_B, real_B)
+        mse_fakeB_realB = mean_squared_error(fake_B, real_B)
+
+        # Log metrics to TensorBoard per batch
+        global_step = epoch * len(dataloader) + batch_idx
+        writer.add_scalar("Metrics/MAE_FakeB_RealB", mae_fakeB, epoch * len(dataloader) + batch_idx)
+        writer.add_scalar("Loss/G_iter", loss_G.item(), epoch * len(dataloader) + batch_idx)
+        writer.add_scalar("Loss/D_iter", loss_D_A.item(), epoch * len(dataloader) + batch_idx)
+        
+    # ---------------------------------
+    # Log epoch-level summaries
+    # ---------------------------------
+    print(f"📉 Epoch {epoch}, G Loss: {train_G_loss:.4f}, D Loss: {train_D_loss:.4f}")
+    avg_mae_fakeB = mae_fakeB  # last batch representative value for simplicity
+    writer.add_scalar("Metrics/MAE_fakeB_RealB_epoch", mae_fakeB, epoch)
+    writer.add_scalar("Loss/G_train", train_G_loss / len(dataloader), epoch)
+    writer.add_scalar("Loss/D_train", train_D_loss / len(dataloader), epoch)
+                    
     return epoch_G_loss / len(dataloader), epoch_D_loss / len(dataloader)
 
 def train_model(source_dir: str, target_dir: str,
@@ -178,10 +206,6 @@ def train_model(source_dir: str, target_dir: str,
             train_dataloader,
             adversarial_loss, cycle_loss, identity_loss
         )
-
-        print(f"📉 Epoch {epoch}, G Loss: {train_G_loss:.4f}, D Loss: {train_D_loss:.4f}")
-        writer.add_scalar("Loss/G_train", train_G_loss, epoch)
-        writer.add_scalar("Loss/D_train", train_D_loss, epoch)
 
         if train_G_loss < best_G_loss or SAVE_EVERY_EPOCH:
             best_G_loss = train_G_loss
