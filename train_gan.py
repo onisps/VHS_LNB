@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import csv
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -25,6 +26,7 @@ from apply_model import apply_gan_model
 import cv2
 from datetime import datetime
 from glob2 import glob
+import pathlib
 
 # Training parameters
 EPOCHS = 50
@@ -38,6 +40,11 @@ if torch.cuda.is_available():
     device = torch.device("cuda:0")
     torch.cuda.set_device(device)
     print(f"✅ Initialized CUDA on device: {device}")
+    # if torch.cuda.device_count() > 1:
+    #     for n_device in torch.cuda.device_count():
+    #         t_device = torch.device(f"cuda:{n_device}")
+    #         torch.cuda.set_device(t_device)
+    #         print(f"✅ Initialized CUDA on device: {t_device}")
     
 # Now you continue as usual:
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -76,9 +83,32 @@ def save_checkpoint(G_AB, G_BA, D_A, D_B, optimizer_G, optimizer_D_A, optimizer_
     }, checkpoint_path)
     print(f"✅ Checkpoint saved: {checkpoint_path}")
 
+def log_epoch_to_csv(csv_path,
+                     epoch,
+                     G_loss,
+                     D_loss,
+                     mae,
+                     mse,
+                     ssim_val,
+                     psnr_val,
+                     lpips_val,
+                     fid_val):
+    """
+    Appends a row of metrics to a CSV file. Creates the file with a header if it doesn't exist.
+    """
+    file_exists = os.path.isfile(csv_path)
+    with open(csv_path, 'a', newline='') as f:
+        writer = csv.writer(f)
+        # Write header if file did not exist
+        if not file_exists:
+            writer.writerow(["epoch", "G_loss", "D_loss", "MAE", "MSE", "SSIM", "PSNR", "LPIPS", "FID"])
+        # Write the row of metrics
+        writer.writerow([epoch, G_loss, D_loss, mae, mse, ssim_val, psnr_val, lpips_val, fid_val])
+
+
 def train_epoch(G_AB, G_BA, D_A, D_B,
                 optimizer_G, optimizer_D_A, optimizer_D_B,
-                dataloader, epoch,
+                dataloader,
                 adversarial_loss, cycle_loss, identity_loss):
     """
     One training epoch for CycleGAN.
@@ -229,18 +259,21 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     # Compute FID for the entire epoch
     epoch_fid = fid_metric.compute().item()
                     
-    writer.add_scalar("Metrics_Epoch/SSIM", epoch_ssim, global_step)
-    writer.add_scalar("Metrics_Epoch/PSNR", epoch_psnr, global_step)
-    writer.add_scalar("Metrics_Epoch/LPIP", epoch_lpips, global_step)
-    writer.add_scalar("Metrics_Epoch/FID", epoch_fid, global_step)
-    writer.add_scalar("Metrics_Epoch/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
-    writer.add_scalar("Metrics_Epoch/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
+    # writer.add_scalar("Metrics_Epoch/SSIM", epoch_ssim, epoch)
+    # writer.add_scalar("Metrics_Epoch/PSNR", epoch_psnr, epoch)
+    # writer.add_scalar("Metrics_Epoch/LPIP", epoch_lpips, epoch)
+    # writer.add_scalar("Metrics_Epoch/FID", epoch_fid, epoch)
+    # writer.add_scalar("Metrics_Epoch/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
+    # writer.add_scalar("Metrics_Epoch/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
                     
-    return epoch_G_loss / len(dataloader), epoch_D_loss / len(dataloader)
+    return (epoch_G_loss / len(dataloader), epoch_D_loss / len(dataloader),\
+            epoch_ssim, epoch_psnr, \
+            epoch_lpips, epoch_fid, \
+            epoch_mae, epoch_mse)
 
 def train_model(source_dir: str, target_dir: str,
                 input_test_dir: str, output_test_dir: str,
-                output_merged_dir: str):
+                output_merged_dir: str,  csv_path:str = "./fix_logs.csv"):
     """
     Main training loop for CycleGAN.
     """
@@ -273,16 +306,36 @@ def train_model(source_dir: str, target_dir: str,
     train_G_loss = 1.0
 
     while train_G_loss > 0.2:
-        train_G_loss, train_D_loss = train_epoch(
+        train_G_loss, train_D_loss, \
+        epoch_ssim, epoch_psnr, \
+        epoch_lpips, epoch_fid, \
+        epoch_mae, epoch_mse = train_epoch(
             G_AB, G_BA, D_A, D_B,
             optimizer_G, optimizer_D_A, optimizer_D_B,
-            train_dataloader, epoch,
+            train_dataloader,
             adversarial_loss, cycle_loss, identity_loss
         )
         
         print(f"📉 Epoch {epoch}, G Loss: {train_G_loss:.4f}, D Loss: {train_D_loss:.4f}")
+        
         writer.add_scalar("Loss_Epoch/G_train", train_G_loss, epoch)
         writer.add_scalar("Loss_Epoch/D_train", train_D_loss, epoch)
+        writer.add_scalar("Metrics_Epoch/SSIM", epoch_ssim, epoch)
+        writer.add_scalar("Metrics_Epoch/PSNR", epoch_psnr, epoch)
+        writer.add_scalar("Metrics_Epoch/LPIP", epoch_lpips, epoch)
+        writer.add_scalar("Metrics_Epoch/FID", epoch_fid, epoch)
+        writer.add_scalar("Metrics_Epoch/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
+        writer.add_scalar("Metrics_Epoch/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
+        log_epoch_to_csv(csv_path,
+                         epoch,
+                         train_G_loss,
+                         train_D_loss,
+                         epoch_mae,
+                         epoch_mse,
+                         epoch_ssim,
+                         epoch_psnr,
+                         epoch_lpips,
+                         epoch_fid)
         
         if train_G_loss < best_G_loss or SAVE_EVERY_EPOCH:
             best_G_loss = train_G_loss
@@ -339,4 +392,7 @@ if __name__ == "__main__":
     os.makedirs(output_test_dir, exist_ok=True)
     os.makedirs(output_merged_dir, exist_ok=True)
 
-    train_model(source, target, input_test_dir, output_test_dir, output_merged_dir)
+    os.makedirs(os.path.join(pathlib.Path(__file__).parent.resolve(), 'csv_logs'), exist_ok=True)
+    csv_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'csv_logs', f'{datetime.now().split(' ')[0]}_training.csv')
+    
+    train_model(source, target, input_test_dir, output_test_dir, output_merged_dir, csv_path)
