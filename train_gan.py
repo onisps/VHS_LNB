@@ -393,6 +393,6 @@ if __name__ == "__main__":
     os.makedirs(output_merged_dir, exist_ok=True)
 
     os.makedirs(os.path.join(pathlib.Path(__file__).parent.resolve(), 'csv_logs'), exist_ok=True)
-    csv_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'csv_logs', f'training_{datetime.now0().split(" ")[0]}_logs.csv')
+    csv_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'csv_logs', f'training_{datetime.now().split(" ")[0]}_logs.csv')
     
     train_model(source, target, input_test_dir, output_test_dir, output_merged_dir, csv_path)
