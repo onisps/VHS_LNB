@@ -108,7 +108,7 @@ def log_epoch_to_csv(csv_path,
 
 def train_epoch(G_AB, G_BA, D_A, D_B,
                 optimizer_G, optimizer_D_A, optimizer_D_B,
-                dataloader,
+                dataloader, epoch,
                 adversarial_loss, cycle_loss, identity_loss):
     """
     One training epoch for CycleGAN.
@@ -312,7 +312,7 @@ def train_model(source_dir: str, target_dir: str,
         epoch_mae, epoch_mse = train_epoch(
             G_AB, G_BA, D_A, D_B,
             optimizer_G, optimizer_D_A, optimizer_D_B,
-            train_dataloader,
+            train_dataloader, epoch,
             adversarial_loss, cycle_loss, identity_loss
         )
         
