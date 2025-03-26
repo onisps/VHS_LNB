@@ -353,6 +353,21 @@ def train_model(source_dir: str, target_dir: str,
         image = cv2.imread('./data/Raw/raw/003_0009.jpg')
         original_size = image.shape[:2]
         merge_patches(output_test_dir, f'{output_merged_dir}', epoch, original_size)
+
+        #new block: adds image to tensorboard log
+        from torchvision.transforms import  ToTensor
+        from PIL import Image
+
+        # Path to merged patches
+        merged_patches_path = os.path.join(output_merged_dir, f'003_0009_{epoch}.jpg')
+
+        if os.path.exists(merged_patches_path):
+            merged_image = Image.open(merged_patches_path).convert('RGB')
+            merged_tensor = ToTensor()(merged_image)
+            writer.add_image('Image 003_0009.jpg/Epoch', merged_tensor, epoch)
+        else:
+            print(f'Warning: Merged image not found at {merged_patches_path}!')
+
         epoch += 1
 
     writer.close()
