@@ -73,6 +73,15 @@ python apply_model.py
 - **Пропускает его через модель**
 - **Сохраняет финальное изображение**
 
+
+### 📈 **5. Метрики**
+- **SSIM** (Structural Similarity Index Measure): Captures perceptual similarity in terms of luminance, contrast, and structure. More perceptually aligned than raw pixel-wise differences.
+- **PSNR** (Peak Signal-to-Noise Ratio): Commonly used in image restoration tasks; higher PSNR usually means the generated image is closer to the reference.
+- **LPIPS** (Learned Perceptual Image Patch Similarity): Uses deep feature embeddings (e.g., from VGG) to measure perceptual similarity. Often more aligned with human perception than SSIM/PSNR alone.
+- **FID** (Frechet Inception Distance): The de facto standard for measuring how well the distribution of generated images matches that of real images. **Lower FID** = more realistic and diverse generation.
+- **MSE** (Mean Squared Error): Useful for capturing more significant color deviations and penalizing large color errors.
+- **MAE** (Mean Absolute Error): Measures pixel-level absolute deviations between generated and GT images. It helps to track how closely colors match at the pixel level.
+
 ### 📂 **6. Структура проекта**
 ```
 📦
