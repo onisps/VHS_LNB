@@ -17,6 +17,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 
 # Import DataParallel if you wish to wrap your models
 import torch.nn as nn
+import torch.nn.functional as F  # Import for functional operations
 
 from utils.dataset import get_dataloader
 from utils.cycle_gan_model import get_cycle_gan_model
@@ -32,6 +33,8 @@ import pathlib
 EPOCHS = 50
 BATCH_SIZE = 8
 SAVE_EVERY_EPOCH = True
+LAMBDA_CYCLE = 10.0 # Suggestion: Emphasize cycle consistency
+LAMBDA_IDENTITY = 0.5 # Suggestion: Identity loss weight
 
 # Explicit CUDA initialization
 if torch.cuda.is_available():
@@ -155,19 +158,25 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # Adversarial Loss (G_AB, G_BA must fool the discriminators)
         loss_G_AB = adversarial_loss(D_B(fake_B), torch.ones_like(D_B(fake_B)))
         loss_G_BA = adversarial_loss(D_A(fake_A), torch.ones_like(D_A(fake_A)))
-
+        
         # Cycle Consistency Loss
-        loss_cycle_A = cycle_loss(rec_A, real_A)
-        loss_cycle_B = cycle_loss(rec_B, real_B)
-
+        loss_cycle_A = cycle_loss(rec_A, real_A) * LAMBDA_CYCLE
+        loss_cycle_B = cycle_loss(rec_B, real_B) * LAMBDA_CYCLE
+        
         # Identity Loss
-        loss_identity_A = identity_loss(G_BA(real_A), real_A)
-        loss_identity_B = identity_loss(G_AB(real_B), real_B)
+        loss_identity_A = identity_loss(G_BA(real_A), real_A) * LAMBDA_IDENTITY
+        loss_identity_B = identity_loss(G_AB(real_B), real_B) * LAMBDA_IDENTITY
 
         # Combined generator loss
         loss_G = (loss_G_AB + loss_G_BA
-                  + 8 * (loss_cycle_A + loss_cycle_B)
-                  + 0.5 * (loss_identity_A + loss_identity_B))
+                  + loss_cycle_A + loss_cycle_B
+                  + loss_identity_A + loss_identity_B)
+
+        # Combined generator loss
+        # loss_G = (loss_G_AB + loss_G_BA
+        #           + 8 * (loss_cycle_A + loss_cycle_B)
+        #           + 0.5 * (loss_identity_A + loss_identity_B))
+        
         loss_G.backward()
         optimizer_G.step()
 
@@ -197,6 +206,7 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # ---------------------------------
         # Compute Additional Metrics
         # ---------------------------------
+        
         from torchmetrics.functional import mean_absolute_error, mean_squared_error
 
         # Compute pixel-level MAE between fake_B and real_B
@@ -208,6 +218,7 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # ------------------
         # Reference-based metrics
         # ------------------
+        
         # If your images are in [-1, 1], shift them to [0, 1] for metrics:
         fake_B_01 = 0.5 * (fake_B + 1.0)
         real_B_01 = 0.5 * (real_B + 1.0)
@@ -252,20 +263,14 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
     epoch_mae /= num_batches
     epoch_mse /= num_batches
     # End of epoch: compute average SSIM, PSNR, LPIPS
+    
     epoch_ssim /= num_batches
     epoch_psnr /= num_batches
     epoch_lpips /= num_batches
 
     # Compute FID for the entire epoch
     epoch_fid = fid_metric.compute().item()
-                    
-    # writer.add_scalar("Metrics_Epoch/SSIM", epoch_ssim, epoch)
-    # writer.add_scalar("Metrics_Epoch/PSNR", epoch_psnr, epoch)
-    # writer.add_scalar("Metrics_Epoch/LPIP", epoch_lpips, epoch)
-    # writer.add_scalar("Metrics_Epoch/FID", epoch_fid, epoch)
-    # writer.add_scalar("Metrics_Epoch/MAE_FakeB_RealB_epoch", epoch_mae, epoch)
-    # writer.add_scalar("Metrics_Epoch/MSE_FakeB_RealB_epoch", epoch_mse, epoch)
-                    
+    
     return (epoch_G_loss / len(dataloader), epoch_D_loss / len(dataloader),\
             epoch_ssim, epoch_psnr, \
             epoch_lpips, epoch_fid, \
@@ -304,6 +309,12 @@ def train_model(source_dir: str, target_dir: str,
     best_G_loss = float("inf")
     epoch = 0
     train_G_loss = 1.0
+
+    # Suggestion: Implement a learning rate scheduler
+    scheduler_G = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_G, T_max=EPOCHS, eta_min=0)
+    scheduler_D_A = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_D_A, T_max=EPOCHS, eta_min=0)
+    scheduler_D_B = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_D_B, T_max=EPOCHS, eta_min=0)
+
 
     while train_G_loss > 0.2:
         train_G_loss, train_D_loss, \
@@ -360,14 +371,19 @@ def train_model(source_dir: str, target_dir: str,
 
         # Path to merged patches
         merged_patches_path = os.path.join(output_merged_dir, f'003_0009_{epoch}.jpg')
-
+       
         if os.path.exists(merged_patches_path):
             merged_image = Image.open(merged_patches_path).convert('RGB')
             merged_tensor = ToTensor()(merged_image)
             writer.add_image('Image 003_0009.jpg/Epoch', merged_tensor, epoch)
         else:
             print(f'Warning: Merged image not found at {merged_patches_path}!')
-
+            
+        # Step the schedulers
+        scheduler_G.step()
+        scheduler_D_A.step()
+        scheduler_D_B.step()
+        
         epoch += 1
 
     writer.close()
