@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils.global_variables import LR
+from utils.global_variables import LEARNING_RATE_G, LEARNING_RATE_D, BETA1, BETA2
 from torch.nn.utils import spectral_norm
 
 class ResidualBlock(nn.Module):
@@ -128,10 +128,10 @@ def get_cycle_gan_model():
 
     # Optimizers
     optimizer_G = optim.Adam(
-        list(G_AB.parameters()) + list(G_BA.parameters()), lr=LR, betas=(0.5, 0.999)
+        list(G_AB.parameters()) + list(G_BA.parameters()), lr=LEARNING_RATE_G, betas=(0.5, 0.999)
     )
-    optimizer_D_A = optim.Adam(D_A.parameters(), lr=LR, betas=(0.5, 0.999))
-    optimizer_D_B = optim.Adam(D_B.parameters(), lr=LR, betas=(0.5, 0.999))
+    optimizer_D_A = optim.Adam(D_A.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA1))
+    optimizer_D_B = optim.Adam(D_B.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA1))
 
     # Loss functions
     adversarial_loss = nn.MSELoss()  # or nn.BCEWithLogitsLoss() in some variations
