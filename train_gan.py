@@ -375,7 +375,7 @@ def train_model(source_dir: str, target_dir: str,
         if os.path.exists(merged_patches_path):
             merged_image = Image.open(merged_patches_path).convert('RGB')
             merged_tensor = ToTensor()(merged_image)
-            writer.add_image('Image 003_0009.jpg/Epoch', merged_tensor, epoch)
+            writer.add_image('Merged_image', merged_tensor, epoch)
         else:
             print(f'Warning: Merged image not found at {merged_patches_path}!')
             
