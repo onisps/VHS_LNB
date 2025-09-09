@@ -29,6 +29,15 @@ from datetime import datetime
 from glob2 import glob
 import pathlib
 
+import random, numpy as np
+
+SEED=1337
+random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+    torch.backends.cudnn.deterministic=True
+    torch.backends.cudnn.benchmark=False
+
 # Training parameters
 EPOCHS = 50
 BATCH_SIZE = 8
@@ -232,18 +241,18 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         epoch_psnr += psnr_val.item()
 
         # 3) LPIPS
-        lpips_val = lpips_metric(fake_B_01, real_B_01)
+        lpips_val = lpips_metric(fake_B, real_B)
         epoch_lpips += lpips_val.item()
 
         # 4) FID (distribution-based)
         # Accumulate features for real_B and fake_B
 
         # Convert [0,1] to [0,255] and cast to uint8
-        fake_B_uint8 = (fake_B_01 * 255).clamp(0, 255).to(torch.uint8)
-        real_B_uint8 = (real_B_01 * 255).clamp(0, 255).to(torch.uint8)
+        # fake_B_uint8 = (fake_B_01 * 255).clamp(0, 255).to(torch.uint8)
+        # real_B_uint8 = (real_B_01 * 255).clamp(0, 255).to(torch.uint8)
         
-        fid_metric.update(fake_B_uint8, real=True)
-        fid_metric.update(real_B_uint8, real=False)
+        fid_metric.update(real_B_01.detach(), real=True)
+        fid_metric.update(fake_B_01.detach(), real=False)
         
         # Log metrics to TensorBoard per batch
         global_step = epoch * len(dataloader) + batch_idx
@@ -316,7 +325,7 @@ def train_model(source_dir: str, target_dir: str,
     scheduler_D_B = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_D_B, T_max=EPOCHS, eta_min=0)
 
 
-    while train_G_loss > 0.2:
+    for epoch in range(EPOCHS):
         train_G_loss, train_D_loss, \
         epoch_ssim, epoch_psnr, \
         epoch_lpips, epoch_fid, \
@@ -369,13 +378,17 @@ def train_model(source_dir: str, target_dir: str,
         from torchvision.transforms import  ToTensor
         from PIL import Image
 
+        from torchvision import transforms as T
+
         # Path to merged patches
         merged_patches_path = os.path.join(output_merged_dir, f'003_0009_{epoch}.jpg')
        
         if os.path.exists(merged_patches_path):
             merged_image = Image.open(merged_patches_path).convert('RGB')
-            transform = Compose([Resize((original_size/3, original_size/3)), ToTensor()])
+            h, w = original_size
+            transform = T.Compose([T.Resize((max(h // 3, 1), max(w // 3, 1))), T.ToTensor()])
             merged_tensor = transform(merged_image)
+            # add_image ожидает CHW в [0,1]
             writer.add_image('Merged_image', merged_tensor, epoch)
         else:
             print(f'Warning: Merged image not found at {merged_patches_path}!')
@@ -384,8 +397,6 @@ def train_model(source_dir: str, target_dir: str,
         scheduler_G.step()
         scheduler_D_A.step()
         scheduler_D_B.step()
-        
-        epoch += 1
 
     writer.close()
     print("🎉 Training completed!")

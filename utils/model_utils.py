@@ -3,6 +3,7 @@ import torch
 from utils.cut_model import CUT
 from utils.cycle_gan_model import Generator
 import torch.nn as nn
+
 CHECKPOINT_DIR = "../checkpoints"
 
 
@@ -37,7 +38,7 @@ def load_model_cut(checkpoint_path: str, device: str = "cuda"):
     print(f"✅ Модель загружена из {checkpoint_path} (эпоха {checkpoint['epoch']})")
     return model
 
-    
+
 def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: str = 'G_AB'):
     """
     Loads a CycleGAN generator from a checkpoint, wrapping it in DataParallel
@@ -51,7 +52,7 @@ def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: s
     """
     # Load the checkpoint from disk
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    
+
     # Instantiate the Generator as defined in your cycle_gan_model.py
     model = Generator()  # do NOT move to device yet, we will wrap first
 
@@ -65,6 +66,10 @@ def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: s
     model.to(device)
 
     # Select which generator weights to load from the checkpoint
+    state = checkpoint.get(generator_type.upper())
+    if state is None:
+        raise KeyError(f"Key '{generator_type}' not found in checkpoint.")
+
     if generator_type.upper() == 'G_AB':
         if "G_AB" in checkpoint:
             model.load_state_dict(checkpoint["G_AB"])
@@ -80,7 +85,7 @@ def load_model_gan(checkpoint_path: str, device: str = "cuda", generator_type: s
 
     model.eval()
     print(f"✅ Generator {generator_type} loaded from {checkpoint_path} "
-          f"(epoch {checkpoint.get('epoch', 'unknown')}) with DataParallel={num_gpus>1}")
+          f"(epoch {checkpoint.get('epoch', 'unknown')}) with DataParallel={num_gpus > 1}")
     return model
 
 

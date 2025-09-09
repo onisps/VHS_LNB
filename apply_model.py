@@ -22,7 +22,8 @@ def preprocess_image(image_path: str):
             transforms.ToPILImage(),
             transforms.Resize((PATCH_SIZE, PATCH_SIZE)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5], std=[0.5])
+            # transforms.Normalize(mean=[0.5], std=[0.5])
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
     except:
         transform = transforms.Compose([
@@ -118,5 +119,6 @@ if __name__ == "__main__":
 
     image = cv2.imread('./data/Raw/raw/003_0009.jpg')
     original_size = image.shape[:2]
-    merge_patches(output, f'data/test_model/reconstructed_epoch_{epoch}.jpg', epoch, original_size)
+    merge_patches(output, 'data/test_model', epoch, original_size)
+    # merge_patches(output, f'data/test_model/reconstructed_epoch_{epoch}.jpg', epoch, original_size)
     # merge_patches('/home/esh/PycharmProjects/VHS_LNB/data/Raw/test/raw/', 'data/test_model/raw_reconstructed_pic.jpg', original_size)

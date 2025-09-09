@@ -127,11 +127,17 @@ def get_cycle_gan_model():
     D_B = Discriminator().to(device)
 
     # Optimizers
+    # optimizer_G = optim.Adam(
+    #     list(G_AB.parameters()) + list(G_BA.parameters()), lr=LEARNING_RATE_G, betas=(0.5, 0.999)
+    # )
+    # optimizer_D_A = optim.Adam(D_A.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA1))
+    # optimizer_D_B = optim.Adam(D_B.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA1))
+
     optimizer_G = optim.Adam(
-        list(G_AB.parameters()) + list(G_BA.parameters()), lr=LEARNING_RATE_G, betas=(0.5, 0.999)
+            list(G_AB.parameters()) + list(G_BA.parameters()), lr=LEARNING_RATE_G, betas=(BETA1, BETA2)
     )
-    optimizer_D_A = optim.Adam(D_A.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA1))
-    optimizer_D_B = optim.Adam(D_B.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA1))
+    optimizer_D_A = optim.Adam(D_A.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA2))
+    optimizer_D_B = optim.Adam(D_B.parameters(), lr=LEARNING_RATE_D, betas=(BETA1, BETA2))
 
     # Loss functions
     adversarial_loss = nn.MSELoss()  # or nn.BCEWithLogitsLoss() in some variations
