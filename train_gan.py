@@ -248,11 +248,11 @@ def train_epoch(G_AB, G_BA, D_A, D_B,
         # Accumulate features for real_B and fake_B
 
         # Convert [0,1] to [0,255] and cast to uint8
-        # fake_B_uint8 = (fake_B_01 * 255).clamp(0, 255).to(torch.uint8)
-        # real_B_uint8 = (real_B_01 * 255).clamp(0, 255).to(torch.uint8)
+        fake_B_uint8 = (fake_B_01 * 255).clamp(0, 255).to(torch.uint8)
+        real_B_uint8 = (real_B_01 * 255).clamp(0, 255).to(torch.uint8)
         
-        fid_metric.update(real_B_01.detach(), real=True)
-        fid_metric.update(fake_B_01.detach(), real=False)
+        fid_metric.update(real_B_uint8, real=True)
+        fid_metric.update(fake_B_uint8, real=False)
         
         # Log metrics to TensorBoard per batch
         global_step = epoch * len(dataloader) + batch_idx
